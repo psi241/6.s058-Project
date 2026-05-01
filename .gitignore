@@ -21,3 +21,4 @@ venv
 *.xml
 Model
 Manga109
+.env
