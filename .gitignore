@@ -21,3 +21,6 @@ venv
 *.xml
 Model
 Manga109
+.env
+.env
+__pycache__
