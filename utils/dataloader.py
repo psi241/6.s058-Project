@@ -2,6 +2,9 @@ import os
 import xml.etree.ElementTree as ET
 import xmltodict
 from PIL import Image
+import torchvision.transforms as v2
+import torch
+from tqdm import tqdm
 
 print("Currect path:", os.getcwd())
 
@@ -43,7 +46,6 @@ def retrieve_page(path, manga_name, page: int, position = None, target_size = No
     cropped_img = img.crop(position)
     if target_size:
       cropped_img = cropped_img.resize(target_size)
-    print(cropped_img)
   else:
     cropped_img = img
   return cropped_img
@@ -63,7 +65,6 @@ def get_crops_info_char(dict_data, char_id):
     if isinstance(bodies, dict):
       faces = [faces] 
     if faces:
-      print(faces)
       char_faces_page = [face for face in faces if face['@character'] == char_id]
       char_faces_page = [face | {'@index': page['@index']} for face in char_faces_page]
       for f in char_faces_page:
@@ -94,14 +95,15 @@ def get_location(dict_data, obj):
   pages_dict = dict_data['book']['pages']['page']
   out = {}
   for page in pages_dict:
-    out[page['@index']] = []
+    page_idx = int(page['@index'])
+    out[page_idx] = []
     if obj == 'face':
       faces = page.get('face')
       if isinstance(faces, dict):
         faces = [faces]
       if faces:
         for face in faces:
-          out[page['@index']].append({
+          out[page_idx].append({
               'character': face['@character'],
               'position': (int(face['@xmin']), int(face['@ymin']), int(face['@xmax']), int(face['@ymax']))
           })
@@ -111,21 +113,55 @@ def get_location(dict_data, obj):
         bodies = [bodies]
       if bodies:
         for body in bodies:
-          out[page['@index']].append({
+          out[page_idx].append({
               'character': body['@character'],
               'position': (int(body['@xmin']), int(body['@ymin']), int(body['@xmax']), int(body['@ymax']))
           })
   return out
 
-def create_data(data_dicts):
+def create_data(path, data_dict):
   '''
-  Make a tensor of samples
+  Organize crops of characters face and body into a dictionary
+
+  return a dictionary mapping key: character id to value: list of img
   '''
-  pass
+  title = data_dict['book']['@title']
+  characters_id, _ = get_character_list(data_dict)
+  img_dict = {}
+  for i, char_id in enumerate(characters_id):
+    faces_info, bodies_info = get_crops_info_char(data_dict, char_id)
+    face_imgs = []
+    body_imgs = []
 
-if __name__ == "__main__":
-    dotenv.load_dotenv()
-    DATA_PATH = os.getenv("DATASET_PATH")
+    for crop in faces_info:
+        img = retrieve_page(path, title, crop['@index'], crop['position'], target_size = (224, 224))
+        face_imgs.append(img)
 
-    data = annotation_loader(DATA_PATH, "AisazuNihaIrarenai")
-    print(data['book']['pages'])
+    for crop in bodies_info:
+        img = retrieve_page(path, title, crop['@index'], crop['position'], target_size = (224, 224))
+        body_imgs.append(img)   
+
+    img_dict[i] = {'id': char_id, 'face_imgs': face_imgs, 'body_imgs': body_imgs}
+  return img_dict
+
+def data_tensor_loader(pil_img_list, transform, batch_size = 64):
+  batch = []
+
+  pbar = tqdm(pil_img_list, total=len(pil_img_list), desc="Load Cropped data", unit="img")
+
+  for img in pbar:
+      tensor_image = transform(img)
+      batch.append(tensor_image)
+
+      # Once batch is full, yield it
+      if len(batch) == batch_size:
+          yield torch.stack(batch)
+          batch = []
+
+  if batch:
+      yield torch.stack(batch)
+
+simple_transform = v2.Compose([
+  v2.PILToTensor(), 
+  v2.ConvertImageDtype(torch.float32)
+])
