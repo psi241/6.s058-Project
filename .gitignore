@@ -20,3 +20,4 @@ venv
 *.blg
 *.xml
 .env
+__pycache__
