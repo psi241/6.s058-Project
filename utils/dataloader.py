@@ -63,7 +63,7 @@ def get_crops_info_char(dict_data, char_id):
     if isinstance(faces, dict):
       faces = [faces] 
     if isinstance(bodies, dict):
-      faces = [faces] 
+      bodies = [bodies] 
     if faces:
       char_faces_page = [face for face in faces if face['@character'] == char_id]
       char_faces_page = [face | {'@index': page['@index']} for face in char_faces_page]
