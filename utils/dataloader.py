@@ -5,8 +5,9 @@ from PIL import Image
 import torchvision.transforms as v2
 import torch
 from tqdm import tqdm
+import random
 
-print("Currect path:", os.getcwd())
+print("Current path:", os.getcwd())
 
 def annotation_loader(path, manga_name):
     path_to_ann_file = os.path.join(path, "Manga109/annotations/", f"{manga_name}.xml")
@@ -165,3 +166,20 @@ simple_transform = v2.Compose([
   v2.PILToTensor(), 
   v2.ConvertImageDtype(torch.float32)
 ])
+
+def jitter_box(position, page_width, page_height, noise=15):
+    x_min, y_min, x_max, y_max = position
+    x_min += random.randint(-noise, noise)
+    y_min += random.randint(-noise, noise)
+    x_max += random.randint(-noise, noise)
+    y_max += random.randint(-noise, noise)
+
+    x_min = max(0, x_min)
+    y_min = max(0, y_min)
+    x_max = min(page_width, x_max)
+    y_max = min(page_height, y_max)
+
+    x_max = max(x_min + 1, x_max)
+    y_max = max(y_min + 1, y_max)
+
+    return (x_min, y_min, x_max, y_max)
