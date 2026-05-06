@@ -18,7 +18,7 @@ from utils.dataloader import *
 import random
 import matplotlib.pyplot as plt
 import pprint
-from Model.models import SimCLRModel
+from model.models import SimCLRModel
 
 # In[4]:
 
@@ -53,8 +53,6 @@ class Manga109Dataset(Dataset):
             if len(faces_info) >= 2:
                 self.char_ids.append(char_id)
                 self.char_faces[char_id] = faces_info
-        
-        print("Dataset Length : ", len(self.char_ids))
 
     def __len__(self):
         return len(self.char_ids)
@@ -72,9 +70,8 @@ class Manga109Dataset(Dataset):
             pos_i = crop_i['position']
             pos_j = crop_j['position']
 
-        xi = to_tensor(retrieve_page(self.dataset_path, self.manga_name, crop_i['@index'], pos_i))
-        xj = to_tensor(retrieve_page(self.dataset_path, self.manga_name, crop_j['@index'], pos_j))
-
+        xi = to_tensor(retrieve_page(self.dataset_path, self.manga_name, crop_i['@index'], pos_i, target_size=(112, 112)))
+        xj = to_tensor(retrieve_page(self.dataset_path, self.manga_name, crop_j['@index'], pos_j, target_size=(112, 112)))
         return xi, xj
 
 def nt_xent_loss(z_i, z_j, temperature=0.5):
@@ -114,13 +111,17 @@ for manga_idx in trained_manga_indices:
 
     print(manga_name)
     contrastive_dataset = Manga109Dataset(DATASET_PATH, manga_name)
-    train_loaders[manga_idx] = DataLoader(contrastive_dataset, batch_size=32, shuffle=True, num_workers=0)
+    train_loaders[manga_idx] = DataLoader(contrastive_dataset, batch_size=1, shuffle=True, num_workers=0)
+
+model.train()
+total_loss = 0
 
 for epoch in range(10):
-    for manga_idx in trained_manga_indices:
+    epoch_loss = 0
+    counter = 0
+    for manga_idx in tqdm(trained_manga_indices):
         train_loader = train_loaders[manga_idx]
-        model.train()
-        total_loss = 0
+        
         for x_i, x_j in train_loader:
             x_i, x_j = x_i.to(device), x_j.to(device)
             z_i = model(x_i)
@@ -129,9 +130,10 @@ for epoch in range(10):
             loss = nt_xent_loss(z_i, z_j)
             loss.backward()
             optimizer.step()
-            total_loss += loss.item()
+            epoch_loss += loss.item()
+            counter += len(train_loader)
 
-        print(f"{manga_name} | Epoch {epoch+1} | Loss: {total_loss / len(train_loader):.4f}")
+    print(f"Epoch {epoch+1} | Loss: {epoch_loss / counter:.4f}")
 
 model = model.cpu()
 torch.save(model.state_dict(), "simclr.pt")

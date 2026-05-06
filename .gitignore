@@ -19,8 +19,7 @@ venv
 *.bbl
 *.blg
 *.xml
-Model
+*.pt
 Manga109
-.env
 .env
 __pycache__

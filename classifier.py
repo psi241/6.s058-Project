@@ -13,7 +13,7 @@ from utils.dataloader import *
 
 from dotenv import load_dotenv
 import os
-from Model.models import SimCLRModel
+from model.models import SimCLRModel
 # Load environment variables from .env file
 load_dotenv()  
 DATASET_PATH = os.getenv('DATASET_PATH')
