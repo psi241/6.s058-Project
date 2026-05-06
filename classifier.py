@@ -23,7 +23,7 @@ manga_name_list = get_book_list(DATASET_PATH)
 class CharacterFaceLabelLoader(Dataset):
     def __init__(self, dataset_path, manga_name, transform):
         annotations = annotation_loader(dataset_path, manga_name)
-        chars_dict = create_data(dataset_path, annotations, target_size = (224, 224))
+        chars_dict = create_data(dataset_path, annotations, target_size = (112, 112))
         X = []
         Y = []
         self.map_idx_to_id = {}
@@ -119,18 +119,21 @@ if __name__ == "__main__":
     model.load_state_dict(torch.load('simclr.pt', weights_only=True))
     model.eval()
 
-    optimizer = torch.optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
-    dataloader = CharacterFaceLabelLoader(DATASET_PATH, 'ARMS', simple_transform)
+    dataloader = CharacterFaceLabelLoader(DATASET_PATH, 'AisazuNihaIrarenai', simple_transform)
     print("[prog] Encoding")
     dataloader.set_encoded_imags(model)
 
-    classifier = nn.Linear(model.projection_dim , dataloader.labels_count)
+    classifier = nn.Sequential(
+        nn.Linear(model.projection_dim , 256),
+        nn.Linear(256 , dataloader.labels_count),
+    )
 
     training_set, test_set = torch.utils.data.random_split(dataloader, [0.7, 0.3])
 
     print("[prog] Train classifier")
-    NUM_EPOCH = 10
+    NUM_EPOCH = 50
     train_loader = DataLoader(training_set, batch_size=32, shuffle=True, num_workers=0)
     for i in range(NUM_EPOCH):
         train_one_epoch(i, classifier, train_loader, optimizer)

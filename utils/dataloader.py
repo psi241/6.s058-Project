@@ -64,7 +64,7 @@ def get_crops_info_char(dict_data, char_id):
     if isinstance(faces, dict):
       faces = [faces] 
     if isinstance(bodies, dict):
-      faces = [faces] 
+      bodies = [bodies] 
     if faces:
       char_faces_page = [face for face in faces if face['@character'] == char_id]
       char_faces_page = [face | {'@index': page['@index']} for face in char_faces_page]
@@ -120,7 +120,7 @@ def get_location(dict_data, obj):
           })
   return out
 
-def create_data(path, data_dict):
+def create_data(path, data_dict, target_size = None):
   '''
   Organize crops of characters face and body into a dictionary
 
@@ -135,11 +135,11 @@ def create_data(path, data_dict):
     body_imgs = []
 
     for crop in faces_info:
-        img = retrieve_page(path, title, crop['@index'], crop['position'], target_size = (224, 224))
+        img = retrieve_page(path, title, crop['@index'], crop['position'], target_size = target_size)
         face_imgs.append(img)
 
     for crop in bodies_info:
-        img = retrieve_page(path, title, crop['@index'], crop['position'], target_size = (224, 224))
+        img = retrieve_page(path, title, crop['@index'], crop['position'], target_size = target_size)
         body_imgs.append(img)   
 
     img_dict[i] = {'id': char_id, 'face_imgs': face_imgs, 'body_imgs': body_imgs}
