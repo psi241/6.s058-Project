@@ -10,6 +10,6 @@ manga_name_list = get_book_list(DATASET_PATH)
 TARGET_SIZE = (112,112)
 trained_manga_indices = list(range(32))
 
-trial_no = 0
+trial_no = 1
 
 NUM_EPOCH_CONTRAST = 15
