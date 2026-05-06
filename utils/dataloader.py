@@ -39,6 +39,7 @@ def retrieve_page(path, manga_name, page: int, position = None, target_size = No
   page: The page number as an integer.
   position: A tuple (xmin, ymin, xmax, ymax) for cropping.
   target_size: Optional target size for resizing the cropped image.
+  Return: PIL Image
   '''
   page = int(page)
   img = Image.open(f'{path}/Manga109/images/{manga_name}/{page:03d}.jpg')

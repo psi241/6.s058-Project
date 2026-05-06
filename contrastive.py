@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 # In[1]:
-
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -14,26 +12,16 @@ from torchvision import transforms
 import numpy as np
 import random
 from tqdm import tqdm
-from utils.dataloader import *
 import random
 import matplotlib.pyplot as plt
 import pprint
 from model.models import SimCLRModel
-
-# In[4]:
-
-from dotenv import load_dotenv
-import os
-
-# Load environment variables from .env file
-load_dotenv()  
-DATASET_PATH = os.getenv('DATASET_PATH')
-manga_name_list = get_book_list(DATASET_PATH)
+from params import manga_name_list, DATASET_PATH, TARGET_SIZE, trained_manga_indices, NUM_EPOCH_CONTRAST, trial_no
+from utils.dataloader import *
 
 np.random.seed(12)
-
 to_tensor = transforms.ToTensor()
-
+# In[2]:
 
 class Manga109Dataset(Dataset):
     def __init__(self, dataset_path, manga_name, transform=jitter_box):
@@ -70,8 +58,8 @@ class Manga109Dataset(Dataset):
             pos_i = crop_i['position']
             pos_j = crop_j['position']
 
-        xi = to_tensor(retrieve_page(self.dataset_path, self.manga_name, crop_i['@index'], pos_i, target_size=(112, 112)))
-        xj = to_tensor(retrieve_page(self.dataset_path, self.manga_name, crop_j['@index'], pos_j, target_size=(112, 112)))
+        xi = to_tensor(retrieve_page(self.dataset_path, self.manga_name, crop_i['@index'], pos_i, target_size=TARGET_SIZE))
+        xj = to_tensor(retrieve_page(self.dataset_path, self.manga_name, crop_j['@index'], pos_j, target_size=TARGET_SIZE))
         return xi, xj
 
 def nt_xent_loss(z_i, z_j, temperature=0.5):
@@ -96,27 +84,27 @@ def nt_xent_loss(z_i, z_j, temperature=0.5):
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print("device", device)
 
-# In[15]:
-
-
+# In[3]:
 model = SimCLRModel()
 model = model.to(device)
 optimizer = torch.optim.Adam(model.parameters(), lr=3e-4)
 
-trained_manga_indices = list(range(16))
+
 train_loaders = {}
 
+# Prepare train_loaders
 for manga_idx in trained_manga_indices:
     manga_name = manga_name_list[manga_idx]
 
     print(manga_name)
     contrastive_dataset = Manga109Dataset(DATASET_PATH, manga_name)
     train_loaders[manga_idx] = DataLoader(contrastive_dataset, batch_size=1, shuffle=True, num_workers=0)
+    
 
 model.train()
 total_loss = 0
 
-for epoch in range(10):
+for epoch in range(NUM_EPOCH_CONTRAST):
     epoch_loss = 0
     counter = 0
     for manga_idx in tqdm(trained_manga_indices):
@@ -136,5 +124,5 @@ for epoch in range(10):
     print(f"Epoch {epoch+1} | Loss: {epoch_loss / counter:.4f}")
 
 model = model.cpu()
-torch.save(model.state_dict(), "simclr.pt")
+torch.save(model.state_dict(), f"simclr-{trial_no}.pt")
 

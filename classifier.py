@@ -10,32 +10,33 @@ import numpy as np
 from tqdm import tqdm
 from utils.dataloader import *
 
-
 from dotenv import load_dotenv
 import os
 from model.models import SimCLRModel
-# Load environment variables from .env file
-load_dotenv()  
-DATASET_PATH = os.getenv('DATASET_PATH')
-
-manga_name_list = get_book_list(DATASET_PATH)
+from params import DATASET_PATH, manga_name_list, TARGET_SIZE
 
 class CharacterFaceLabelLoader(Dataset):
-    def __init__(self, dataset_path, manga_name, transform):
-        annotations = annotation_loader(dataset_path, manga_name)
-        chars_dict = create_data(dataset_path, annotations, target_size = (112, 112))
-        X = []
-        Y = []
-        self.map_idx_to_id = {}
-        for i, (char_id, char_dict) in enumerate(chars_dict.items()):
-            self.map_idx_to_id[i] = char_id
-            for img in char_dict['face_imgs']:
-                transformed_img = transform(img)
-                Y.append(torch.tensor(i))
-                X.append(transformed_img)
-            
+    def __init__(self, imgs, labels, transform):
+        '''
+        Arguments
+            X: list of PIL images in RGB
+            Y: 1-D list/numpy array of Label
+        '''
+        # annotations = annotation_loader(dataset_path, manga_name)
+        # chars_dict = create_data(dataset_path, annotations, target_size = TARGET_SIZE)
+        # X = []
+        # Y = []
+        # self.map_idx_to_id = {}
+        # for i, (char_id, char_dict) in enumerate(chars_dict.items()):
+        #     self.map_idx_to_id[i] = char_id
+        #     for img in char_dict['face_imgs']:
+        #         transformed_img = transform(img)
+        #         Y.append(torch.tensor(i))
+        #         X.append(transformed_img)
+
+        X = [transform(img) for img in imgs]
         self.imgs = torch.stack(X, dim=0)
-        self.labels = torch.stack(Y)
+        self.labels = torch.stack(torch.tensor(labels))
         self.labels_count = len(self.map_idx_to_id)
         self.encoded_imgs = None
 
@@ -111,17 +112,33 @@ def train_one_epoch(epoch_index, model, training_loader, optimizer):
     print("Epoch {}, avg loss = {}".format(epoch_index, total_loss/count))
 
     return last_loss
-    
+
+def make_prediction(manga_idx, train_samples, train_labels):
+    pass
+
 
 if __name__ == "__main__":
-    print("[prog] Model Loaded")
+    print("[prog] Model Load")
     model = SimCLRModel()
     model.load_state_dict(torch.load('simclr.pt', weights_only=True))
     model.eval()
 
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
-    dataloader = CharacterFaceLabelLoader(DATASET_PATH, 'AisazuNihaIrarenai', simple_transform)
+    print("[prog] Data Load")
+    annotations = annotation_loader(DATASET_PATH, 'AisazuNihaIrarenai')
+    chars_dict = create_data(DATASET_PATH, annotations, target_size = TARGET_SIZE)
+    X = []
+    Y = []
+    map_idx_to_id = {}
+    for i, (char_id, char_dict) in enumerate(chars_dict.items()):
+        map_idx_to_id[i] = char_id
+        for img in char_dict['face_imgs']:
+            Y.append(i)
+            X.append(img)
+
+    dataloader = CharacterFaceLabelLoader(DATASET_PATH, X, Y, simple_transform)
+
     print("[prog] Encoding")
     dataloader.set_encoded_imags(model)
 
