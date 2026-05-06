@@ -5,8 +5,9 @@ from PIL import Image
 import torchvision.transforms as v2
 import torch
 from tqdm import tqdm
+import random
 
-print("Currect path:", os.getcwd())
+print("Current path:", os.getcwd())
 
 def annotation_loader(path, manga_name):
     path_to_ann_file = os.path.join(path, "Manga109/annotations/", f"{manga_name}.xml")
@@ -38,11 +39,12 @@ def retrieve_page(path, manga_name, page: int, position = None, target_size = No
   page: The page number as an integer.
   position: A tuple (xmin, ymin, xmax, ymax) for cropping.
   target_size: Optional target size for resizing the cropped image.
+  Return: PIL Image
   '''
   page = int(page)
   img = Image.open(f'{path}/Manga109/images/{manga_name}/{page:03d}.jpg')
   # Crop image
-  if position:
+  if position is not None:
     cropped_img = img.crop(position)
     if target_size:
       cropped_img = cropped_img.resize(target_size)
@@ -63,7 +65,7 @@ def get_crops_info_char(dict_data, char_id):
     if isinstance(faces, dict):
       faces = [faces] 
     if isinstance(bodies, dict):
-      faces = [faces] 
+      bodies = [bodies] 
     if faces:
       char_faces_page = [face for face in faces if face['@character'] == char_id]
       char_faces_page = [face | {'@index': page['@index']} for face in char_faces_page]
@@ -119,7 +121,7 @@ def get_location(dict_data, obj):
           })
   return out
 
-def create_data(path, data_dict):
+def create_data(path, data_dict, target_size = None):
   '''
   Organize crops of characters face and body into a dictionary
 
@@ -134,11 +136,11 @@ def create_data(path, data_dict):
     body_imgs = []
 
     for crop in faces_info:
-        img = retrieve_page(path, title, crop['@index'], crop['position'], target_size = (224, 224))
+        img = retrieve_page(path, title, crop['@index'], crop['position'], target_size = target_size)
         face_imgs.append(img)
 
     for crop in bodies_info:
-        img = retrieve_page(path, title, crop['@index'], crop['position'], target_size = (224, 224))
+        img = retrieve_page(path, title, crop['@index'], crop['position'], target_size = target_size)
         body_imgs.append(img)   
 
     img_dict[i] = {'id': char_id, 'face_imgs': face_imgs, 'body_imgs': body_imgs}
@@ -165,3 +167,20 @@ simple_transform = v2.Compose([
   v2.PILToTensor(), 
   v2.ConvertImageDtype(torch.float32)
 ])
+
+def jitter_box(position, page_width, page_height, noise=15):
+    x_min, y_min, x_max, y_max = position
+    x_min += random.randint(-noise, noise)
+    y_min += random.randint(-noise, noise)
+    x_max += random.randint(-noise, noise)
+    y_max += random.randint(-noise, noise)
+
+    x_min = max(0, x_min)
+    y_min = max(0, y_min)
+    x_max = min(page_width, x_max)
+    y_max = min(page_height, y_max)
+
+    x_max = max(x_min + 1, x_max)
+    y_max = max(y_min + 1, y_max)
+
+    return (x_min, y_min, x_max, y_max)
