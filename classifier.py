@@ -36,8 +36,8 @@ class CharacterFaceLabelLoader(Dataset):
 
         X = [transform(img) for img in imgs]
         self.imgs = torch.stack(X, dim=0)
-        self.labels = torch.stack(torch.tensor(labels))
-        self.labels_count = len(self.map_idx_to_id)
+        self.labels = torch.tensor(labels)
+
         self.encoded_imgs = None
 
     def __len__(self):

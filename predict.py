@@ -1,16 +1,19 @@
 from classifier import make_prediction, CharacterFaceLabelLoader
-from params import manga_name_list, DATASET_PATH, trial_no
+from params import manga_name_list, DATASET_PATH, trial_no, TARGET_SIZE
 from utils.dataloader import *
 from model.models import SimCLRModel
 from yolo_8 import *
 from PIL import Image
 import pandas as pd
 
-test_indices = list(range(64))
+test_indices = [20, 40]
 
 model = SimCLRModel()
-model.load_state_dict(torch.load('/content/simclr-1.pt', weights_only=True))
+model.load_state_dict(torch.load(f'simclr-{trial_no}.pt', weights_only=True))
 model.eval()
+
+# PREDICT_MODE = 'yolo'
+PREDICT_MODE = 'dataset'
 
 from sklearn.neighbors import KNeighborsClassifier
 def knn_classify(new_data, training_vectors, training_labels, k):
@@ -42,7 +45,7 @@ def compute_accuracy(dataloader, name, train_prop = 0.2, knn = 20):
     test_labels = shuffled_labels[num_train:]
 
     accuracy_k = {}
-    for k in range(1,knn):
+    for k in range(1,knn+1):
         predictions = knn_classify(test_vectors, training_vectors, training_labels, k)
 
         accuracy = np.sum(np.where(predictions == test_labels, 1, 0)) / len(test_labels)
@@ -61,27 +64,40 @@ if __name__ == '__main__':
         annotations = annotation_loader(DATASET_PATH, name)
         print(annotations['book'].keys())
         pages = annotations['book']['pages']
-        print(pages)
 
         page_imgs = [retrieve_page(DATASET_PATH, name, page_idx) for page_idx in range(len(pages))]
         
         page_boxes = get_crop(page_imgs)
 
         all_cropped_chars = []
-        for boxes, img in zip(page_boxes, page_imgs):
-            for crop_info in page_boxes:
-                positions = crop_info['position']
-                character_crop = img.crop(positions)
-                all_cropped_chars.append(character_crop)
-
-        # Correct true labels
         true_labels = []
+
+        if PREDICT_MODE == 'yolo':
+            for boxes, img in zip(page_boxes, page_imgs):
+                for crop_info in page_boxes:
+                    positions = crop_info['position']
+                    character_crop = img.crop(positions)
+                    all_cropped_chars.append(character_crop)
+
+            # Correct true labels
+        
+        if PREDICT_MODE == 'dataset':
+            print("[prog] Data Load")
+            annotations = annotation_loader(DATASET_PATH, name)
+            chars_dict = create_data(DATASET_PATH, annotations, target_size = TARGET_SIZE)
+            map_idx_to_id = {}
+            for i, (char_id, char_dict) in enumerate(chars_dict.items()):
+                map_idx_to_id[i] = char_id
+                for img in char_dict['face_imgs']:
+                    true_labels.append(i)
+                    all_cropped_chars.append(img)
 
         assert len(all_cropped_chars) == len(true_labels)
 
-        dataloader = CharacterFaceLabelLoader(DATASET_PATH, all_cropped_chars, true_labels,simple_transform)
+        dataloader = CharacterFaceLabelLoader(all_cropped_chars, true_labels, simple_transform)
         dataloader.set_encoded_imags(model)
         acc_df = compute_accuracy(dataloader, name)
+        acc_df.insert(1, 'max', np.max(acc_df[len(1,20)]))
         acc_df.to_csv(out_file_name , mode = 'a')
 
 
