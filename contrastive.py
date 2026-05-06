@@ -16,7 +16,7 @@ import random
 import matplotlib.pyplot as plt
 import pprint
 from model.models import SimCLRModel
-from params import manga_name_list, DATASET_PATH, TARGET_SIZE, trained_manga_indices, NUM_EPOCH_CONTRAST, trial_no
+from params import manga_name_list, DATASET_PATH, TARGET_SIZE, trained_manga_indices, NUM_EPOCH_CONTRAST, trial_no, temperature, batch_size, learning_rate, freeze_base 
 from utils.dataloader import *
 
 np.random.seed(12)
@@ -87,7 +87,7 @@ print("device", device)
 # In[3]:
 model = SimCLRModel()
 model = model.to(device)
-optimizer = torch.optim.Adam(model.parameters(), lr=3e-4)
+optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
 
 train_loaders = {}
@@ -98,14 +98,16 @@ for manga_idx in trained_manga_indices:
 
     print(manga_name)
     contrastive_dataset = Manga109Dataset(DATASET_PATH, manga_name)
-    train_loaders[manga_idx] = DataLoader(contrastive_dataset, batch_size=1, shuffle=True, num_workers=0)
+    train_loaders[manga_idx] = DataLoader(contrastive_dataset, batch_size=batch_size, shuffle=True, num_workers=0)
     
 
 model.train()
+if freeze_base:
+    model.encoder.eval()
 total_loss = 0
 
 for epoch in range(NUM_EPOCH_CONTRAST):
-    epoch_loss = 0
+    epoch_loss = 0.
     counter = 0
     for manga_idx in tqdm(trained_manga_indices):
         train_loader = train_loaders[manga_idx]
@@ -115,7 +117,7 @@ for epoch in range(NUM_EPOCH_CONTRAST):
             z_i = model(x_i)
             z_j = model(x_j)
             optimizer.zero_grad()
-            loss = nt_xent_loss(z_i, z_j)
+            loss = nt_xent_loss(z_i, z_j, temperature=temperature)
             loss.backward()
             optimizer.step()
             epoch_loss += loss.item()

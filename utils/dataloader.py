@@ -44,7 +44,7 @@ def retrieve_page(path, manga_name, page: int, position = None, target_size = No
   page = int(page)
   img = Image.open(f'{path}/Manga109/images/{manga_name}/{page:03d}.jpg')
   # Crop image
-  if position:
+  if position is not None:
     cropped_img = img.crop(position)
     if target_size:
       cropped_img = cropped_img.resize(target_size)

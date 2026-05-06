@@ -22,17 +22,6 @@ class CharacterFaceLabelLoader(Dataset):
             X: list of PIL images in RGB
             Y: 1-D list/numpy array of Label
         '''
-        # annotations = annotation_loader(dataset_path, manga_name)
-        # chars_dict = create_data(dataset_path, annotations, target_size = TARGET_SIZE)
-        # X = []
-        # Y = []
-        # self.map_idx_to_id = {}
-        # for i, (char_id, char_dict) in enumerate(chars_dict.items()):
-        #     self.map_idx_to_id[i] = char_id
-        #     for img in char_dict['face_imgs']:
-        #         transformed_img = transform(img)
-        #         Y.append(torch.tensor(i))
-        #         X.append(transformed_img)
 
         X = [transform(img) for img in imgs]
         self.imgs = torch.stack(X, dim=0)
@@ -78,6 +67,25 @@ class CharacterFaceLabelLoader(Dataset):
         self.encoded_imgs = torch.cat(encoded_results, dim=0)
         
         return num_images
+
+    def __getitem__(self, index):
+        if self.encoded_imgs is None:
+            raise ValueError("Image needed to be encoded first")
+        return self.encoded_imgs[index], self.labels[index]
+
+class EncodedFaceLabelLoader(Dataset):
+    def __init__(self, encoded_imgs, labels):
+        '''
+        Arguments
+            encoded_imgs: list of 128-dim encoding
+            Y: 1-D list/numpy array of Label
+        '''
+        assert len(encoded_imgs) == len(labels)
+        self.encoded_imgs = encoded_imgs
+        self.labels = torch.tensor(labels)
+
+    def __len__(self):
+        return len(self.encoded_imgs)
 
     def __getitem__(self, index):
         if self.encoded_imgs is None:
