@@ -4,7 +4,7 @@ import os
 
 # Load environment variables from .env file
 load_dotenv()  
-DATASET_PATH = os.getenv('DATASET_PATH')
+DATASET_PATH = '/Users/nathan/Library/Mobile Documents/com~apple~CloudDocs/1-MIT/Spring 2026/6.S058/6.s058-Project'
 manga_name_list = get_book_list(DATASET_PATH)
 
 TARGET_SIZE = (112,112)
