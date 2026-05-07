@@ -16,7 +16,7 @@ from Model.models import SimCLRModel
 from params import DATASET_PATH, manga_name_list, TARGET_SIZE
 
 class CharacterFaceLabelLoader(Dataset):
-    def __init__(self, imgs, labels, transform):
+    def __init__(self, imgs, labels, transform, label_tensor = True):
         '''
         Arguments
             X: list of PIL images in RGB
@@ -25,7 +25,10 @@ class CharacterFaceLabelLoader(Dataset):
 
         X = [transform(img) for img in imgs]
         self.imgs = torch.stack(X, dim=0)
-        self.labels = torch.tensor(labels)
+        if label_tensor:
+            self.labels = torch.tensor(labels)
+        else:
+            self.labels = labels
 
         self.encoded_imgs = None
 

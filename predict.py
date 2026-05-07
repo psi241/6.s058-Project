@@ -57,13 +57,13 @@ def compute_accuracy(dataloader, name, train_prop = 0.2, knn = KNN, all_annotati
 
         if all_annotation_count is None:
             all_annotation_count = len(test_labels)
-        accuracy = np.sum(np.where(predictions == test_labels, 1, 0)) / all_annotation_count
+        accuracy = np.sum(np.where(predictions == test_labels, 1, 0))
         accuracy_k[k] = accuracy
     
     k_max = np.argmax(list(accuracy_k.values())) + 1
     max_acc = accuracy_k[k_max]
     
-    return pd.DataFrame({'name':name, 'k_max': k_max, 'max_acc': max_acc} | accuracy_k, index=[0])
+    return pd.DataFrame({'name':name, 'k_max': k_max, 'max_acc': max_acc, 'total': all_annotation_count} | accuracy_k, index=[0])
 
 if __name__ == '__main__':
     print("trial no ", trial_no)
