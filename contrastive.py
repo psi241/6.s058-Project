@@ -23,6 +23,9 @@ np.random.seed(12)
 to_tensor = transforms.ToTensor()
 # In[2]:
 
+with open('indices.txt', 'a') as f:
+    f.write('trail_no {} uses {}'.format(trial_no, trained_manga_indices.tolist()))
+
 class Manga109Dataset(Dataset):
     def __init__(self, dataset_path, manga_name, transform=jitter_box):
         self.dataset_path = dataset_path
@@ -99,7 +102,6 @@ for manga_idx in trained_manga_indices:
     print(manga_name)
     contrastive_dataset = Manga109Dataset(DATASET_PATH, manga_name)
     train_loaders[manga_idx] = DataLoader(contrastive_dataset, batch_size=batch_size, shuffle=True, num_workers=0)
-    
 
 model.train()
 if freeze_base:

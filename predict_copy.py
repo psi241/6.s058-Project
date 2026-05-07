@@ -1,7 +1,7 @@
 from classifier import make_prediction, CharacterFaceLabelLoader, EncodedFaceLabelLoader
 from params import manga_name_list, DATASET_PATH, TARGET_SIZE
 from utils.dataloader import *
-from Model.models import SimCLRModel
+from model.models import SimCLRModel
 from yolo_8 import *
 from PIL import Image
 import pandas as pd
@@ -9,9 +9,9 @@ from tqdm import tqdm
 from torchvision import transforms
 
 # Choose trained model here
-trial_no = 2
+trial_no = 4
 
-test_indices = list(range(0, 32))
+test_indices = list(range(24, 109))
 to_tensor = transforms.ToTensor()
 
 model = SimCLRModel()
@@ -122,7 +122,7 @@ if __name__ == '__main__':
             dataloader.set_encoded_imags(model)
         
         acc_df = compute_accuracy(dataloader, name, all_annotation_count = annotation_boxes_count)
-        acc_df.to_csv(out_file_name , mode = 'a', header = False)
+        acc_df.to_csv(out_file_name , mode = 'a', header=False)
         print("save to ", out_file_name)
 
 
