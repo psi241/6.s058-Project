@@ -184,3 +184,47 @@ def jitter_box(position, page_width, page_height, noise=15):
     y_max = max(y_min + 1, y_max)
 
     return (x_min, y_min, x_max, y_max)
+
+def train_test_split_data(data_dict, train_ratio=0.8, shuffle=True, random_seed=None):
+  '''
+  Split character image data into training and test sets with optional shuffling
+  Arguments
+      data_dict: 
+  '''
+  if random_seed is not None:
+      random.seed(random_seed)
+  
+  train_data = []
+  train_label = []
+  test_data = []
+  test_label = []
+  
+  for char_id, images in data_dict.items():
+      # Shuffle images for this character if requested
+      char_images = images.copy()
+      if shuffle:
+          random.shuffle(char_images)
+      
+      # Calculate split point
+      split_idx = int(len(char_images) * train_ratio)
+      
+      # Split and extend lists
+      train_data.extend(char_images[:split_idx])
+      train_label.extend([char_id] * split_idx)
+      
+      test_data.extend(char_images[split_idx:])
+      test_label.extend([char_id] * (len(char_images) - split_idx))
+  
+  # Final shuffle of all data
+  if shuffle:
+      combined_train = list(zip(train_data, train_label))
+      random.shuffle(combined_train)
+      train_data, train_label = zip(*combined_train)
+      train_data, train_label = list(train_data), list(train_label)
+      
+      combined_test = list(zip(test_data, test_label))
+      random.shuffle(combined_test)
+      test_data, test_label = zip(*combined_test)
+      test_data, test_label = list(test_data), list(test_label)
+  
+  return train_data, train_label, test_data, test_label

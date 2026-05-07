@@ -1,7 +1,7 @@
 from classifier import make_prediction, CharacterFaceLabelLoader, EncodedFaceLabelLoader
 from params import manga_name_list, DATASET_PATH, TARGET_SIZE
 from utils.dataloader import *
-from Model.models import SimCLRModel
+from model.models import SimCLRModel
 from yolo_8 import *
 from PIL import Image
 import pandas as pd
@@ -9,9 +9,9 @@ from tqdm import tqdm
 from torchvision import transforms
 
 # Choose trained model here
-trial_no = 2
+trial_no = 4
 
-test_indices = list(range(0, 32))
+test_indices = list(range(24, 109))
 to_tensor = transforms.ToTensor()
 
 model = SimCLRModel()
@@ -57,13 +57,13 @@ def compute_accuracy(dataloader, name, train_prop = 0.2, knn = KNN, all_annotati
 
         if all_annotation_count is None:
             all_annotation_count = len(test_labels)
-        accuracy = np.sum(np.where(predictions == test_labels, 1, 0))
+        accuracy = np.sum(np.where(predictions == test_labels, 1, 0)) / all_annotation_count
         accuracy_k[k] = accuracy
     
     k_max = np.argmax(list(accuracy_k.values())) + 1
     max_acc = accuracy_k[k_max]
     
-    return pd.DataFrame({'name':name, 'k_max': k_max, 'max_acc': max_acc, 'total': all_annotation_count} | accuracy_k, index=[0])
+    return pd.DataFrame({'name':name, 'k_max': k_max, 'max_acc': max_acc} | accuracy_k, index=[0])
 
 if __name__ == '__main__':
     print("trial no ", trial_no)
@@ -122,7 +122,7 @@ if __name__ == '__main__':
             dataloader.set_encoded_imags(model)
         
         acc_df = compute_accuracy(dataloader, name, all_annotation_count = annotation_boxes_count)
-        acc_df.to_csv(out_file_name , mode = 'a', header = False)
+        acc_df.to_csv(out_file_name , mode = 'a', header=False)
         print("save to ", out_file_name)
 
 
