@@ -73,8 +73,8 @@ def get_cropped(filename, bounding_box):
     return cropped
 
 
-def get_crop(page_imgs):
-    results = yolov8_animeface.predict(page_imgs, save=False, conf=0.3, iou=0.5)
+def get_crop_boxes_from_yolo(page_imgs):
+    results = yolov8_animeface.predict(page_imgs, save=False, conf=0.3, iou=0.5, verbose=False)
     out = []
 
     for result in results:
@@ -153,3 +153,33 @@ def compute_accuracy(path, manga_name):
         page_ious.append(iou)
 
     return np.mean(page_ious) if page_ious else 0.0
+
+
+def get_paired_pred_boxes_labels(detected_boxes, annotations, page_num, iou_threshold=0.5):
+    annotated_faces = get_location(annotations, 'face')[page_num]
+    annotated_boxes = [face['position'] for face in annotated_faces]
+    
+    # compute all iou pairs
+    all_pairs = []
+    for det_idx, det in enumerate(detected_boxes):
+        for ann_idx, ann in enumerate(annotated_boxes):
+            iou = compute_iou(det, ann)
+            if iou >= iou_threshold:
+                all_pairs.append((iou, det_idx, ann_idx))
+    
+    # sort by iou descending — greedily match best pairs first
+    all_pairs.sort(reverse=True)
+    
+    matched_dets = set()
+    matched_anns = set()
+    results = []
+    
+    for iou, det_idx, ann_idx in all_pairs:
+        if det_idx in matched_dets or ann_idx in matched_anns:
+            continue
+        char_id = annotated_faces[ann_idx]['character']
+        results.append((detected_boxes[det_idx], char_id))
+        matched_dets.add(det_idx)
+        matched_anns.add(ann_idx)
+    
+    return results

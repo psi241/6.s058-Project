@@ -12,7 +12,7 @@ from utils.dataloader import *
 
 from dotenv import load_dotenv
 import os
-from model.models import SimCLRModel
+from Model.models import SimCLRModel
 from params import DATASET_PATH, manga_name_list, TARGET_SIZE
 
 class CharacterFaceLabelLoader(Dataset):

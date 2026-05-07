@@ -1,7 +1,7 @@
 from classifier import make_prediction, CharacterFaceLabelLoader, EncodedFaceLabelLoader
 from params import manga_name_list, DATASET_PATH, TARGET_SIZE
 from utils.dataloader import *
-from model.models import SimCLRModel
+from Model.models import SimCLRModel
 from yolo_8 import *
 from PIL import Image
 import pandas as pd
