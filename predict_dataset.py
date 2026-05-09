@@ -10,9 +10,9 @@ from torchvision import transforms
 from pprint import pprint
 
 # Choose trained model here
-trial_no = 2
+trial_no = 3
 
-test_indices = list(range(64, 109))
+test_indices = list(range(0, 109))
 to_tensor = transforms.ToTensor()
 
 model = SimCLRModel()

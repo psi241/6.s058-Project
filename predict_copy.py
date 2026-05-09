@@ -11,15 +11,15 @@ from torchvision import transforms
 # Choose trained model here
 trial_no = 4
 
-test_indices = list(range(24, 109))
+test_indices = [23]
 to_tensor = transforms.ToTensor()
 
 model = SimCLRModel()
 model.load_state_dict(torch.load(f'simclr-{trial_no}.pt', weights_only=True, map_location=torch.device('cpu')))
 model.eval()
 
-# PREDICT_MODE = 'yolo'
-PREDICT_MODE = 'dataset'
+PREDICT_MODE = 'yolo'
+# PREDICT_MODE = 'dataset'
 KNN = 16
 
 from sklearn.neighbors import KNeighborsClassifier
